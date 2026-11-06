@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
 import { GameFrame, Result } from './components/GameFrame'
 import { VanishingGame } from './games/vanishing/VanishingGame'
+import ShellMemory from './ShellMemory'
 
 type NumberPhase = 'memorizing' | 'answering' | 'success' | 'failed'
 type VisualPhase = 'showing' | 'playing' | 'success' | 'failed'
-type Game = 'number' | 'visual' | 'vanishing' | null
+type Game = 'number' | 'visual' | 'vanishing' | 'shell' | null
 
 const getNumberDuration = (digits: number) => 1000 + (digits - 1) * 300
 const createRoundColor = () => `hsl(${Math.floor(Math.random() * 360)} 82% 72%)`
@@ -38,6 +39,7 @@ function App() {
       {game === 'number' && <NumberMemory />}
       {game === 'visual' && <VisualMemory />}
       {game === 'vanishing' && <VanishingGame />}
+      {game === 'shell' && <ShellMemory />}
     </main>
   )
 }
@@ -47,7 +49,7 @@ function GameSelector({ onSelect }: { onSelect: (game: Game) => void }) {
     <section className="selector">
       <p className="eyebrow">Luyện trí nhớ mỗi ngày</p>
       <h1>Chọn thử thách<br /><em>của bạn.</em></h1>
-      <p className="selector-copy">Ba bài tập ngắn để kiểm tra khả năng ghi nhớ của bạn.</p>
+      <p className="selector-copy">Những thử thách ngắn để kiểm tra trí nhớ và khả năng quan sát của bạn.</p>
       <div className="game-options">
         <button className="game-option number-option" onClick={() => onSelect('number')}>
           <span className="option-icon">123</span>
@@ -57,6 +59,11 @@ function GameSelector({ onSelect }: { onSelect: (game: Game) => void }) {
         <button className="game-option visual-option" onClick={() => onSelect('visual')}>
           <span className="option-icon grid-icon"><i /><i /><i /><i /></span>
           <span><strong>Nhớ hình ảnh</strong><small>Ghi nhớ các ô sáng trên lưới</small></span>
+          <b>→</b>
+        </button>
+        <button className="game-option shell-option" onClick={() => onSelect('shell')}>
+          <span className="option-icon">◉</span>
+          <span><strong>Đảo bi</strong><small>Theo dõi viên bi dưới những chiếc hũ</small></span>
           <b>→</b>
         </button>
         <button className="game-option vanish-option" onClick={() => onSelect('vanishing')}>
@@ -114,6 +121,7 @@ function VisualMemory() {
   const [phase, setPhase] = useState<VisualPhase>('showing')
   const [selected, setSelected] = useState<number[]>([])
   const [best, setBest] = useState(() => Number(localStorage.getItem('visual-memory-best')) || 0)
+  const [lives, setLives] = useState(3)
   const [roundColor, setRoundColor] = useState(createRoundColor)
   const [squares, setSquares] = useState(3)
   const [gridSide, setGridSide] = useState(3)
@@ -143,7 +151,16 @@ function VisualMemory() {
 
   const selectSquare = (index: number) => {
     if (phase !== 'playing' || selected.includes(index)) return
-    if (!pattern.includes(index)) { setPhase('failed'); return }
+    if (!pattern.includes(index)) {
+      if (lives === 1) {
+        setLives(0)
+        setPhase('failed')
+      } else {
+        setLives((current) => current - 1)
+        beginLevel(level, gridSide, squares)
+      }
+      return
+    }
     const nextSelected = [...selected, index]
     setSelected(nextSelected)
     if (nextSelected.length === pattern.length) {
@@ -153,10 +170,10 @@ function VisualMemory() {
     }
   }
 
-  return <GameFrame title="NHỚ HÌNH ẢNH" best={best ? `${best} màn` : '—'} level={level} detail={`${squares} ô cần nhớ`}>
+  return <GameFrame title="NHỚ HÌNH ẢNH" best={best ? `${best} màn` : '—'} level={level} detail={`${squares} ô cần nhớ`} lives={lives}>
     {(phase === 'showing' || phase === 'playing') && <div className="visual-area" style={{ '--round-color': roundColor } as CSSProperties}><p className="instruction">{phase === 'showing' ? 'Ghi nhớ các ô sáng' : `Chọn đủ ${squares} ô vừa sáng`}</p><div className="memory-grid" style={{ '--columns': gridSide } as CSSProperties}>{Array.from({ length: cells }, (_, index) => <button key={index} className={`memory-cell ${phase === 'showing' && pattern.includes(index) ? 'lit' : ''} ${selected.includes(index) ? 'selected' : ''}`} aria-label={`Ô ${index + 1}`} onClick={() => selectSquare(index)} />)}</div><p className="selection-count">{phase === 'playing' ? `${selected.length} / ${squares}` : 'Hãy tập trung'}</p></div>}
     {phase === 'success' && <Result type="success" title="Chính xác." description={<>Bạn đã nhớ đúng <strong>{squares} ô</strong>.</>} />}
-    {phase === 'failed' && <Result type="failed" title="Chưa đúng rồi." description={<>Bạn đã chọn sai một ô. Hãy thử lại từ màn 1.</>} onRestart={() => beginLevel(1, 3, 3)} />}
+    {phase === 'failed' && <Result type="failed" title="Hết mạng rồi." description={<>Bạn đã chọn sai một ô. Hãy thử lại từ màn 1.</>} onRestart={() => { setLives(3); beginLevel(1, 3, 3) }} />}
   </GameFrame>
 }
 

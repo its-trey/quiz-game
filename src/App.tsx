@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent } from 'react'
+import { GameFrame, Result } from './components/GameFrame'
+import { VanishingGame } from './games/vanishing/VanishingGame'
 
 type NumberPhase = 'memorizing' | 'answering' | 'success' | 'failed'
 type VisualPhase = 'showing' | 'playing' | 'success' | 'failed'
-type Game = 'number' | 'visual' | null
+type Game = 'number' | 'visual' | 'vanishing' | null
 
 const getNumberDuration = (digits: number) => 1000 + (digits - 1) * 300
 const createRoundColor = () => `hsl(${Math.floor(Math.random() * 360)} 82% 72%)`
@@ -35,6 +37,7 @@ function App() {
       {game === null && <GameSelector onSelect={setGame} />}
       {game === 'number' && <NumberMemory />}
       {game === 'visual' && <VisualMemory />}
+      {game === 'vanishing' && <VanishingGame />}
     </main>
   )
 }
@@ -44,7 +47,7 @@ function GameSelector({ onSelect }: { onSelect: (game: Game) => void }) {
     <section className="selector">
       <p className="eyebrow">Luyện trí nhớ mỗi ngày</p>
       <h1>Chọn thử thách<br /><em>của bạn.</em></h1>
-      <p className="selector-copy">Hai bài tập ngắn để kiểm tra khả năng ghi nhớ của bạn.</p>
+      <p className="selector-copy">Ba bài tập ngắn để kiểm tra khả năng ghi nhớ của bạn.</p>
       <div className="game-options">
         <button className="game-option number-option" onClick={() => onSelect('number')}>
           <span className="option-icon">123</span>
@@ -54,6 +57,11 @@ function GameSelector({ onSelect }: { onSelect: (game: Game) => void }) {
         <button className="game-option visual-option" onClick={() => onSelect('visual')}>
           <span className="option-icon grid-icon"><i /><i /><i /><i /></span>
           <span><strong>Nhớ hình ảnh</strong><small>Ghi nhớ các ô sáng trên lưới</small></span>
+          <b>→</b>
+        </button>
+        <button className="game-option vanish-option" onClick={() => onSelect('vanishing')}>
+          <span className="option-icon vanish-icon"><i /><i /><i /><i /><i className="is-missing" /><i /><i /><i /><i /></span>
+          <span><strong>Vật nào bị mất</strong><small>Nhớ các vật trên bàn và tìm vật biến mất</small></span>
           <b>→</b>
         </button>
       </div>
@@ -150,14 +158,6 @@ function VisualMemory() {
     {phase === 'success' && <Result type="success" title="Chính xác." description={<>Bạn đã nhớ đúng <strong>{squares} ô</strong>.</>} />}
     {phase === 'failed' && <Result type="failed" title="Chưa đúng rồi." description={<>Bạn đã chọn sai một ô. Hãy thử lại từ màn 1.</>} onRestart={() => beginLevel(1, 3, 3)} />}
   </GameFrame>
-}
-
-function GameFrame({ title, best, level, detail, children }: { title: string; best: string; level: number; detail: string; children: React.ReactNode }) {
-  return <><div className="game-heading"><span>{title}</span><div className="best-score">Kỷ lục <strong>{best}</strong></div></div><section className="game-card" aria-live="polite"><div className="level-row"><span className="eyebrow">Màn {level}</span><span className="duration">{detail}</span></div>{children}</section><footer>Mỗi màn sẽ khó hơn một chút. Hãy tập trung nhé.</footer></>
-}
-
-function Result({ type, title, description, onRestart }: { type: 'success' | 'failed'; title: React.ReactNode; description: React.ReactNode; onRestart?: () => void }) {
-  return <div className={`result ${type}-result`}><div className="result-icon">{type === 'success' ? '✓' : '×'}</div><p className="eyebrow">{type === 'success' ? 'Chính xác' : 'Chưa đúng rồi'}</p><h1>{title}</h1><p>{description}</p>{onRestart && <button className="primary-button" onClick={onRestart}>Chơi lại <span>↻</span></button>}</div>
 }
 
 function Keypad({ onDigit, onDelete }: { onDigit: (digit: string) => void; onDelete: () => void }) {

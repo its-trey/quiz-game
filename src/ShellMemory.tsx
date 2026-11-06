@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { ShellScene } from './games/shell/scene'
 import { getShellDifficulty } from './shellRules'
 
-type Phase = 'hiding' | 'shuffling' | 'choosing' | 'revealing' | 'ended'
+type Phase = 'hiding' | 'covering' | 'shuffling' | 'choosing' | 'revealing' | 'ended'
 export default function ShellMemory() {
   const [round, setRound] = useState(1)
   const [lives, setLives] = useState(3)
@@ -34,9 +34,16 @@ export default function ShellMemory() {
 
   useEffect(() => {
     if (phase !== 'hiding') return
-    const timeout = window.setTimeout(() => setPhase('shuffling'), 1900)
+    const timeout = window.setTimeout(() => setPhase('covering'), 1900)
     return () => window.clearTimeout(timeout)
   }, [phase, attempt])
+
+  useEffect(() => {
+    if (phase !== 'covering') return
+    // Let the cup settle over the ball, then leave a short beat before shuffling.
+    const timeout = window.setTimeout(() => setPhase('shuffling'), 950)
+    return () => window.clearTimeout(timeout)
+  }, [phase])
 
   useEffect(() => {
     if (phase !== 'shuffling') return
@@ -116,6 +123,7 @@ export default function ShellMemory() {
   chooseRef.current = chooseCup
 
   const instruction = phase === 'hiding' ? 'Theo dõi viên bi đi vào hũ'
+    : phase === 'covering' ? 'Hũ đang úp xuống viên bi…'
     : phase === 'shuffling' ? 'Đừng rời mắt khỏi hũ có bi…'
     : phase === 'choosing' ? 'Viên bi ở dưới hũ nào?'
     : correct ? 'Chính xác! Chuẩn bị màn tiếp theo.'
@@ -132,7 +140,7 @@ export default function ShellMemory() {
         <p className="instruction" role="status">{instruction}</p>
         <div ref={stageRef} className="shell-stage" aria-label={phase === 'choosing' ? 'Chọn hũ có viên bi' : undefined} />
         {sceneError && <p className="scene-error">Trình duyệt của bạn không hỗ trợ WebGL để chạy game này.</p>}
-        <p className="shell-hint">{phase === 'shuffling' ? 'Tráo hũ trong 5 giây' : phase === 'choosing' ? 'Nhấn vào một hũ để mở' : phase === 'hiding' ? 'Một viên bi. Hãy nhớ đúng hũ.' : correct ? '+1 màn' : '−1 mạng'}</p>
+        <p className="shell-hint">{phase === 'shuffling' ? 'Tráo hũ trong 5 giây' : phase === 'choosing' ? 'Nhấn vào một hũ để mở' : phase === 'hiding' ? 'Một viên bi. Hãy nhớ đúng hũ.' : phase === 'covering' ? 'Sẵn sàng bắt đầu…' : correct ? '+1 màn' : '−1 mạng'}</p>
       </div>}
     </section>
     <footer>Thắng 3 màn thêm 1 hũ, tối đa 8 hũ. Bạn có 3 mạng.</footer>

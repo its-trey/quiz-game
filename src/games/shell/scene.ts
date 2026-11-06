@@ -5,7 +5,7 @@ export type ShellSceneState = {
   positions: number[]
   ballCup: number
   choice: number | null
-  phase: 'hiding' | 'shuffling' | 'choosing' | 'revealing'
+  phase: 'hiding' | 'covering' | 'shuffling' | 'choosing' | 'revealing'
 }
 
 export type ShellScene = {
@@ -107,7 +107,7 @@ export async function createShellScene(host: HTMLElement, onChoose: (id: number)
     drawTable()
     layout()
     entries.forEach((entry, id) => {
-      const revealBall = state.phase === 'hiding' || (state.phase === 'revealing' && id === state.ballCup)
+      const revealBall = (state.phase === 'hiding' && id === state.ballCup) || (state.phase === 'revealing' && id === state.ballCup)
       const selected = state.phase === 'revealing' && id === state.choice
       entry.ball.visible = revealBall
       entry.label.visible = state.phase === 'choosing'

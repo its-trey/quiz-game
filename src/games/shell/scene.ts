@@ -15,11 +15,13 @@ export type ShellScene = {
 
 type CupEntry = {
   root: Container
+  cupVisual: Container
   cup: Graphics
   ball: Graphics
   label: Text
   targetX: number
   targetY: number
+  targetCupY: number
   moveTime: number
 }
 
@@ -44,19 +46,21 @@ export async function createShellScene(host: HTMLElement, onChoose: (id: number)
     const root = new Container()
     const shadow = new Graphics().ellipse(0, 40, 40, 9).fill({ color: 0x000000, alpha: 0.3 })
     const ball = new Graphics().circle(0, 29, 11).fill(0xffc95c).stroke({ color: 0xfff1bc, width: 2 })
+    const cupVisual = new Container()
     const cup = new Graphics()
       .moveTo(-35, -48).quadraticCurveTo(0, -59, 35, -48).lineTo(45, 36).quadraticCurveTo(0, 50, -45, 36).closePath()
       .fill(CUP).stroke({ color: 0xddeeff, width: 2, alpha: 0.9 })
     const shine = new Graphics().moveTo(-22, -33).lineTo(-28, 19).stroke({ color: 0xffffff, alpha: 0.2, width: 7, cap: 'round' })
+    cupVisual.addChild(cup, shine)
     const label = new Text({ text: String(id + 1), style: { fill: 0xaebbd4, fontFamily: 'system-ui', fontSize: 13, fontWeight: '700' } })
     label.anchor.set(0.5)
     label.y = 72
-    root.addChild(shadow, ball, cup, shine, label)
+    root.addChild(shadow, ball, cupVisual, label)
     root.eventMode = 'none'
     root.cursor = 'pointer'
     root.on('pointertap', () => onChoose(id))
     cupLayer.addChild(root)
-    return { root, cup, ball, label, targetX: 0, targetY: 0, moveTime: 0 }
+    return { root, cupVisual, cup, ball, label, targetX: 0, targetY: 0, targetCupY: -55, moveTime: 0 }
   }
 
   const drawTable = () => {
@@ -90,6 +94,7 @@ export async function createShellScene(host: HTMLElement, onChoose: (id: number)
       entry.moveTime = Math.max(0, entry.moveTime - delta * 2)
       const arc = entry.moveTime > 0 ? Math.sin(entry.moveTime * Math.PI) * -20 : 0
       entry.root.y += (entry.targetY + arc - entry.root.y) * Math.min(1, delta * 10)
+      entry.cupVisual.y += (entry.targetCupY - entry.cupVisual.y) * Math.min(1, delta * 9)
     })
   })
 
@@ -108,7 +113,7 @@ export async function createShellScene(host: HTMLElement, onChoose: (id: number)
       entry.label.visible = state.phase === 'choosing'
       entry.root.eventMode = state.phase === 'choosing' ? 'static' : 'none'
       entry.cup.tint = selected ? (id === state.ballCup ? SUCCESS : DANGER) : CUP
-      entry.cup.y = selected || (state.phase === 'revealing' && id === state.ballCup) ? -55 : 0
+      entry.targetCupY = state.phase === 'hiding' || selected || (state.phase === 'revealing' && id === state.ballCup) ? -55 : 0
     })
   }
 
